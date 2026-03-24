@@ -45,6 +45,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'support',
+    'users',
+    'projects',
+    'issues',
 ]
 
 MIDDLEWARE = [
@@ -126,4 +129,4 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 # Utilisation du modèle User personnalisé
-AUTH_USER_MODEL = 'support.User'
+AUTH_USER_MODEL = 'users.User'

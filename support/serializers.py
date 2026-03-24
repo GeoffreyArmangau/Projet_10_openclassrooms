@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, Project, Contributor, Issue, Comment
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -18,3 +18,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             can_data_be_shared=validated_data.get('can_data_be_shared', False),
         )
         return user
+
+class ProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = ['id', 'title', 'description', 'type', 'author', 'created_time']
+        read_only_fields = ['author', 'created_time']
+
+class IssueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Issue
+        fields = [
+            'id', 'title', 'description', 'project', 'author', 'assignee',
+            'priority', 'tag', 'status', 'created_time'
+        ]
+        read_only_fields = ['author', 'created_time']

@@ -1,18 +1,16 @@
-from django.shortcuts import render
-from rest_framework import generics, viewsets
-from users.models import User
-from projects.models import Project, Contributor
-from .models import Issue, Comment
+
+
+from rest_framework import generics, permissions
 from .serializers import IssueSerializer, CommentSerializer
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status, permissions
+from projects.models import Contributor
+from .models import Issue, Comment
 from django.core.exceptions import PermissionDenied
+from support.permissions import IsAuthorOrReadOnly, IsContributorOrReadOnly
 
 
 class IssueListCreateView(generics.ListCreateAPIView):
     serializer_class = IssueSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsContributorOrReadOnly]
 
     def get_queryset(self):
         # Seuls les issues des projets où l'utilisateur est contributeur
@@ -29,26 +27,20 @@ class IssueListCreateView(generics.ListCreateAPIView):
             raise PermissionDenied("L'assigné doit être contributeur du projet.")
         serializer.save(author=self.request.user)
 
+
 class IssueDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = IssueSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAuthorOrReadOnly]
 
     def get_queryset(self):
         return Issue.objects.filter(project__contributor__user=self.request.user)
 
-    def perform_update(self, serializer):
-        if self.request.user != self.get_object().author:
-            raise PermissionDenied("Seul l'auteur peut modifier cette issue.")
-        serializer.save()
+    # Les permissions gèrent déjà l'accès auteur
 
-    def perform_destroy(self, instance):
-        if self.request.user != instance.author:
-            raise PermissionDenied("Seul l'auteur peut supprimer cette issue.")
-        instance.delete()
 
 class CommentListCreateView(generics.ListCreateAPIView):
     serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsContributorOrReadOnly]
 
     def get_queryset(self):
         # Seuls les commentaires des issues des projets où l'utilisateur est contributeur
@@ -61,19 +53,12 @@ class CommentListCreateView(generics.ListCreateAPIView):
             raise PermissionDenied("Vous devez être contributeur du projet pour commenter.")
         serializer.save(author=self.request.user)
 
+
 class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAuthorOrReadOnly]
 
     def get_queryset(self):
         return Comment.objects.filter(issue__project__contributor__user=self.request.user)
 
-    def perform_update(self, serializer):
-        if self.request.user != self.get_object().author:
-            raise PermissionDenied("Seul l'auteur peut modifier ce commentaire.")
-        serializer.save()
-
-    def perform_destroy(self, instance):
-        if self.request.user != instance.author:
-            raise PermissionDenied("Seul l'auteur peut supprimer ce commentaire.")
-        instance.delete()
+    # Les permissions gèrent déjà l'accès auteur

@@ -1,16 +1,21 @@
-from django.shortcuts import render
-from rest_framework import generics
+from rest_framework import viewsets
 from .models import Project, Contributor
 from .serializers import ProjectSerializer
 from rest_framework.permissions import IsAuthenticated
 from support.permissions import IsAuthorOrReadOnly, IsContributorOrReadOnly
-from django.core.exceptions import PermissionDenied
 
-# Create your views here.
 
-class ProjectListCreateView(generics.ListCreateAPIView):
+
+class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
-    permission_classes = [IsAuthenticated, IsContributorOrReadOnly]
+    queryset = Project.objects.all()
+
+    def get_permissions(self):
+        if self.action in ['update', 'partial_update', 'destroy']:
+            permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
+        else:
+            permission_classes = [IsAuthenticated, IsContributorOrReadOnly]
+        return [permission() for permission in permission_classes]
 
     def get_queryset(self):
         # Seuls les projets où l'utilisateur est contributeur
@@ -20,13 +25,3 @@ class ProjectListCreateView(generics.ListCreateAPIView):
         # L'utilisateur devient author et contributor
         project = serializer.save(author=self.request.user)
         Contributor.objects.create(user=self.request.user, project=project)
-
-
-class ProjectDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = ProjectSerializer
-    permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
-
-    def get_queryset(self):
-        return Project.objects.filter(contributor__user=self.request.user)
-
-    # Les permissions gèrent déjà l'accès auteur

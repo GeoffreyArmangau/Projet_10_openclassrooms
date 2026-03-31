@@ -11,7 +11,7 @@ class ProjectTests(APITestCase):
         self.client.force_authenticate(user=self.user)
 
     def test_create_project(self):
-        url = reverse('project-list-create')
+        url = reverse('project-list')
         data = {
             'title': 'Projet Test',
             'description': 'Description du projet',
@@ -26,7 +26,7 @@ class ProjectTests(APITestCase):
         # Création d'un projet où l'utilisateur est contributeur
         project = Project.objects.create(title='Projet 1', description='desc', type='back-end', author=self.user)
         Contributor.objects.create(user=self.user, project=project)
-        url = reverse('project-list-create')
+        url = reverse('project-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)

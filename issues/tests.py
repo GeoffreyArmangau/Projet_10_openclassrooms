@@ -17,7 +17,7 @@ class IssueTests(APITestCase):
         self.client.force_authenticate(user=self.user)
 
     def test_create_issue_success(self):
-        url = reverse('issue-list-create')
+        url = reverse('issue-list')
         data = {
             'title': 'Bug critique',
             'description': 'Un bug à corriger',
@@ -33,7 +33,7 @@ class IssueTests(APITestCase):
 
     def test_create_issue_assignee_not_contributor(self):
         outsider = User.objects.create_user(username='outsider', password='pass', age=40)
-        url = reverse('issue-list-create')
+        url = reverse('issue-list')
         data = {
             'title': 'Bug',
             'description': 'desc',
@@ -48,7 +48,7 @@ class IssueTests(APITestCase):
 
     def test_list_issues_only_contributor(self):
         Issue.objects.create(title='Tâche 1', description='desc', project=self.project, author=self.user, assignee=self.user, priority='LOW', tag='TASK', status='TO_DO')
-        url = reverse('issue-list-create')
+        url = reverse('issue-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
@@ -78,7 +78,7 @@ class CommentTests(APITestCase):
         self.client.force_authenticate(user=self.user)
 
     def test_create_comment_success(self):
-        url = reverse('comment-list-create')
+        url = reverse('comment-list')
         data = {
             'description': 'Un commentaire utile',
             'issue': self.issue.id
@@ -90,7 +90,7 @@ class CommentTests(APITestCase):
     def test_create_comment_not_contributor(self):
         outsider = User.objects.create_user(username='outsiderc', password='pass', age=40)
         self.client.force_authenticate(user=outsider)
-        url = reverse('comment-list-create')
+        url = reverse('comment-list')
         data = {
             'description': 'Commentaire refusé',
             'issue': self.issue.id
@@ -100,7 +100,7 @@ class CommentTests(APITestCase):
 
     def test_list_comments_only_contributor(self):
         Comment.objects.create(description='Commentaire 1', issue=self.issue, author=self.user)
-        url = reverse('comment-list-create')
+        url = reverse('comment-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)

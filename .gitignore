@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Environnement virtuel
+venv/
+.env/
+
+# Django
+*.sqlite3
+*.log
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests
+.coverage
+htmlcov/
+
+# Autres
+*.bak
+*.swp
+*.tmp
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Pipenv/Poetry
+Pipfile.lock
+poetry.lock
+
+# Node
+node_modules/
+
+# Système
+*.orig

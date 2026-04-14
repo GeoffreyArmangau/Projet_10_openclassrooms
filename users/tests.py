@@ -4,8 +4,16 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from .models import User
 
+
 class UserRegistrationTests(APITestCase):
+    """Tests fonctionnels pour l'API d'inscription des utilisateurs."""
+
     def test_register_user_success(self):
+        """
+        Vérifie qu'un utilisateur majeur (15 ans et plus) peut s'inscrire.
+
+        Attend une réponse HTTP 201 et la présence de l'utilisateur en base.
+        """
         url = reverse('user-register')
         data = {
             'username': 'testolduser',
@@ -21,6 +29,12 @@ class UserRegistrationTests(APITestCase):
         self.assertTrue(User.objects.filter(username='testolduser').exists())
 
     def test_register_user_under_15(self):
+        """
+        Vérifie qu'un utilisateur de moins de 15 ans ne peut pas s'inscrire.
+
+        Attend une réponse HTTP 400 avec une erreur sur le champ `age`,
+        conformément aux exigences RGPD de consentement.
+        """
         url = reverse('user-register')
         data = {
             'username': 'testyounguser',

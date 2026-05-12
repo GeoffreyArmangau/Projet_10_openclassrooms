@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions
+from django.shortcuts import get_object_or_404
 from .serializers import IssueSerializer, CommentSerializer
-from projects.models import Contributor
+from projects.models import Contributor, Project
 from .models import Issue, Comment
 from django.core.exceptions import PermissionDenied
 from support.permissions import IsAuthorOrReadOnly, IsContributorOrReadOnly
@@ -15,7 +16,6 @@ class IssueViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = IssueSerializer
-    queryset = Issue.objects.all()
 
     def get_permissions(self):
         """
@@ -33,24 +33,21 @@ class IssueViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Retourne uniquement les issues des projets dont l'utilisateur est contributeur.
+        Retourne les issues du projet identifié par project_pk dans l'URL.
         """
-        return Issue.objects.filter(project__contributor__user=self.request.user)
+        return Issue.objects.filter(project_id=self.kwargs['project_pk'])
 
     def perform_create(self, serializer):
         """
-        Crée un issue en vérifiant que l'auteur et l'assigné sont contributeurs du projet.
+        Crée une issue sur le projet de l'URL.
 
-        Lève une PermissionDenied si l'utilisateur courant n'est pas contributeur
-        du projet, ou si l'assigné désigné ne l'est pas non plus.
+        Lève une PermissionDenied si l'assigné n'est pas contributeur du projet.
         """
-        project = serializer.validated_data['project']
-        if not Contributor.objects.filter(user=self.request.user, project=project).exists():
-            raise PermissionDenied("Vous devez être contributeur du projet.")
+        project = get_object_or_404(Project, pk=self.kwargs['project_pk'])
         assignee = serializer.validated_data.get('assignee')
         if assignee and not Contributor.objects.filter(user=assignee, project=project).exists():
             raise PermissionDenied("L'assigné doit être contributeur du projet.")
-        serializer.save(author=self.request.user)
+        serializer.save(author=self.request.user, project=project)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -63,7 +60,6 @@ class CommentViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = CommentSerializer
-    queryset = Comment.objects.all()
 
     def get_permissions(self):
         """
@@ -81,19 +77,22 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Retourne uniquement les commentaires des issues appartenant aux
-        projets dont l'utilisateur est contributeur.
+        Retourne les commentaires de l'issue identifiée par issue_pk et project_pk dans l'URL.
         """
-        return Comment.objects.filter(issue__project__contributor__user=self.request.user)
+        return Comment.objects.filter(
+            issue_id=self.kwargs['issue_pk'],
+            issue__project_id=self.kwargs['project_pk'],
+        )
 
     def perform_create(self, serializer):
         """
-        Crée un commentaire en vérifiant que l'utilisateur est contributeur
-        du projet auquel appartient l'issue.
+        Crée un commentaire sur l'issue de l'URL.
 
-        Lève une PermissionDenied si l'utilisateur n'est pas contributeur.
+        Lève une 404 si l'issue n'appartient pas au projet de l'URL.
         """
-        issue = serializer.validated_data['issue']
-        if not Contributor.objects.filter(user=self.request.user, project=issue.project).exists():
-            raise PermissionDenied("Vous devez être contributeur du projet pour commenter.")
-        serializer.save(author=self.request.user)
+        issue = get_object_or_404(
+            Issue,
+            pk=self.kwargs['issue_pk'],
+            project_id=self.kwargs['project_pk'],
+        )
+        serializer.save(author=self.request.user, issue=issue)

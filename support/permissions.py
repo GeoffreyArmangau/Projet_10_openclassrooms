@@ -1,4 +1,5 @@
 from rest_framework import permissions
+from projects.models import Contributor, Project
 
 
 class IsAuthorOrReadOnly(permissions.BasePermission):
@@ -40,11 +41,18 @@ class IsContributorOrReadOnly(permissions.BasePermission):
 
     def has_permission(self, request, view):
         """
-        Vérifie que l'utilisateur est authentifié pour accéder à la vue.
-
-        Retourne True si l'utilisateur est connecté, False sinon.
+        Vérifie que l'utilisateur est authentifié et, si project_pk est présent
+        dans l'URL, qu'il est contributeur du projet concerné.
         """
-        return request.user and request.user.is_authenticated
+        if not (request.user and request.user.is_authenticated):
+            return False
+        project_pk = view.kwargs.get('project_pk')
+        if project_pk:
+            project = Project.objects.filter(pk=project_pk).first()
+            if project is None:
+                return False
+            return Contributor.objects.filter(user=request.user, project=project).exists()
+        return True
 
     def has_object_permission(self, request, view, obj):
         """

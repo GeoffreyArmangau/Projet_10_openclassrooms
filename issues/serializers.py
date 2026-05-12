@@ -19,7 +19,7 @@ class IssueSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'project', 'author', 'assignee',
             'priority', 'tag', 'status', 'created_time'
         ]
-        read_only_fields = ['author', 'created_time']
+        read_only_fields = ['author', 'created_time', 'project']
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -37,4 +37,4 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'uuid', 'description', 'author', 'issue', 'created_time'
         ]
-        read_only_fields = ['author', 'uuid', 'created_time']
+        read_only_fields = ['author', 'uuid', 'created_time', 'issue']

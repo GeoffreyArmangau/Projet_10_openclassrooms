@@ -30,6 +30,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("L'utilisateur doit avoir au moins 15 ans pour consentir à la collecte de ses données.")
         return value
 
+    def update(self, instance, validated_data):
+        """
+        Met à jour le profil utilisateur en hachant le mot de passe si fourni.
+        """
+        password = validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
+
     def create(self, validated_data):
         """
         Crée et retourne un nouvel utilisateur avec un mot de passe haché.

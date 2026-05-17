@@ -1,4 +1,5 @@
 from rest_framework import permissions
+from django.http import Http404
 from projects.models import Contributor, Project
 
 
@@ -28,7 +29,9 @@ class IsAuthorOrReadOnly(permissions.BasePermission):
         """
         if request.method in permissions.SAFE_METHODS:
             return True
-        return obj.author == request.user
+        if hasattr(obj, 'author'):
+            return obj.author == request.user
+        return obj.pk == request.user.pk
 
 
 class IsContributorOrReadOnly(permissions.BasePermission):
@@ -50,8 +53,9 @@ class IsContributorOrReadOnly(permissions.BasePermission):
         if project_pk:
             project = Project.objects.filter(pk=project_pk).first()
             if project is None:
-                return False
-            return Contributor.objects.filter(user=request.user, project=project).exists()
+                raise Http404
+            if not Contributor.objects.filter(user=request.user, project=project).exists():
+                raise Http404
         return True
 
     def has_object_permission(self, request, view, obj):

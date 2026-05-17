@@ -30,11 +30,10 @@ class IssueTests(APITestCase):
 
         Attend une réponse HTTP 201 et la présence de l'issue en base.
         """
-        url = reverse('issue-list')
+        url = reverse('issue-list', kwargs={'project_pk': self.project.id})
         data = {
             'title': 'Bug critique',
             'description': 'Un bug à corriger',
-            'project': self.project.id,
             'assignee': self.other.id,
             'priority': 'HIGH',
             'tag': 'BUG',
@@ -51,11 +50,10 @@ class IssueTests(APITestCase):
         Attend une réponse HTTP 403 lorsque l'assigné n'appartient pas au projet.
         """
         outsider = User.objects.create_user(username='outsider', password='pass', age=40)
-        url = reverse('issue-list')
+        url = reverse('issue-list', kwargs={'project_pk': self.project.id})
         data = {
             'title': 'Bug',
             'description': 'desc',
-            'project': self.project.id,
             'assignee': outsider.id,
             'priority': 'LOW',
             'tag': 'BUG',
@@ -72,11 +70,11 @@ class IssueTests(APITestCase):
         auquel l'utilisateur contribue.
         """
         Issue.objects.create(title='Tâche 1', description='desc', project=self.project, author=self.user, assignee=self.user, priority='LOW', tag='TASK', status='TO_DO')
-        url = reverse('issue-list')
+        url = reverse('issue-list', kwargs={'project_pk': self.project.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['title'], 'Tâche 1')
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['title'], 'Tâche 1')
 
     def test_update_issue_only_author(self):
         """
@@ -86,8 +84,8 @@ class IssueTests(APITestCase):
         autre contributeur tentant de modifier le même issue.
         """
         issue = Issue.objects.create(title='Tâche 2', description='desc', project=self.project, author=self.user, assignee=self.user, priority='LOW', tag='TASK', status='TO_DO')
-        url = reverse('issue-detail', args=[issue.id])
-        data = {'title': 'Tâche modifiée', 'description': 'desc', 'project': self.project.id, 'assignee': self.user.id, 'priority': 'LOW', 'tag': 'TASK', 'status': 'IN_PROGRESS'}
+        url = reverse('issue-detail', kwargs={'project_pk': self.project.id, 'pk': issue.id})
+        data = {'title': 'Tâche modifiée', 'description': 'desc', 'assignee': self.user.id, 'priority': 'LOW', 'tag': 'TASK', 'status': 'IN_PROGRESS'}
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         issue.refresh_from_db()
@@ -122,10 +120,9 @@ class CommentTests(APITestCase):
 
         Attend une réponse HTTP 201 et la présence du commentaire en base.
         """
-        url = reverse('comment-list')
+        url = reverse('comment-list', kwargs={'project_pk': self.project.id, 'issue_pk': self.issue.id})
         data = {
             'description': 'Un commentaire utile',
-            'issue': self.issue.id
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -135,18 +132,17 @@ class CommentTests(APITestCase):
         """
         Vérifie qu'un non-contributeur ne peut pas poster de commentaire.
 
-        Attend une réponse HTTP 403 lorsque l'utilisateur n'est pas
+        Attend une réponse HTTP 404 lorsque l'utilisateur n'est pas
         contributeur du projet lié à l'issue.
         """
         outsider = User.objects.create_user(username='outsiderc', password='pass', age=40)
         self.client.force_authenticate(user=outsider)
-        url = reverse('comment-list')
+        url = reverse('comment-list', kwargs={'project_pk': self.project.id, 'issue_pk': self.issue.id})
         data = {
             'description': 'Commentaire refusé',
-            'issue': self.issue.id
         }
         response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_list_comments_only_contributor(self):
         """
@@ -156,11 +152,11 @@ class CommentTests(APITestCase):
         appartenant au projet où l'utilisateur est contributeur.
         """
         Comment.objects.create(description='Commentaire 1', issue=self.issue, author=self.user)
-        url = reverse('comment-list')
+        url = reverse('comment-list', kwargs={'project_pk': self.project.id, 'issue_pk': self.issue.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['description'], 'Commentaire 1')
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['description'], 'Commentaire 1')
 
     def test_update_comment_only_author(self):
         """
@@ -170,8 +166,8 @@ class CommentTests(APITestCase):
         autre contributeur tentant de modifier le même commentaire.
         """
         comment = Comment.objects.create(description='À modifier', issue=self.issue, author=self.user)
-        url = reverse('comment-detail', args=[comment.id])
-        data = {'description': 'Modifié', 'issue': self.issue.id}
+        url = reverse('comment-detail', kwargs={'project_pk': self.project.id, 'issue_pk': self.issue.id, 'pk': comment.id})
+        data = {'description': 'Modifié'}
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         comment.refresh_from_db()

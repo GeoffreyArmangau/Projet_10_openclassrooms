@@ -44,3 +44,6 @@ node_modules/
 
 #Claude
 .claude/
+
+#tests
+.tests/

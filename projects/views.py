@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from django.http import Http404
 from .models import Project, Contributor
 from .serializers import ProjectSerializer, ContributorSerializer
 from rest_framework.permissions import IsAuthenticated
@@ -48,7 +49,7 @@ class ContributorViewSet(viewsets.ModelViewSet):
         """
         project = self.get_project()
         if not project.contributor_set.filter(user=self.request.user).exists():
-            raise PermissionDenied("Vous n'êtes pas contributeur de ce projet.")
+            raise Http404
         return Contributor.objects.filter(project=project)
 
     def perform_create(self, serializer):
